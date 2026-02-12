@@ -1,6 +1,13 @@
 # 🏥 HYGEIA 1.0 - IoT Health Monitoring & Medication System
 This Project shows for IGNITE-2026 in General Sir John  Kotelawala Defence University
 
+![HYGEIA](https://img.shields.io/badge/HYGEIA-1.0-blueviolet?style=for-the-badge)
+![ESP32](https://img.shields.io/badge/ESP32-IoT-green?style=for-the-badge&logo=espressif)
+![Healthcare](https://img.shields.io/badge/Healthcare-Monitoring-red?style=for-the-badge)
+![Arduino](https://img.shields.io/badge/Arduino-Compatible-00979D?style=for-the-badge&logo=arduino)
+![Open Source](https://img.shields.io/badge/Open%20Source-Yes-brightgreen?style=for-the-badge)
+
+
 > **"Empowering elderly care with real-time monitoring and automated assistance."**
 
 **HYGEIA 1.0** is a dual-device IoT ecosystem designed to assist patients and caregivers. It consists of a **Smart Glove** that monitors vital signs and a **Smart Medication Supply Unit** that automates pill dispensing. The two devices communicate directly via ESP-NOW to ensure the patient is alerted via haptic feedback when it is time to take medication.
