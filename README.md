@@ -1,12 +1,13 @@
 # 🏥 HYGEIA 1.0 - IoT Health Monitoring & Medication System
 This Project shows for IGNITE-2026 in General Sir John  Kotelawala Defence University
 
-https://img.shields.io/badge/HYGEIA-1.0-blueviolet?style=for-the-badge
-https://img.shields.io/badge/ESP32-IoT-green?style=for-the-badge&logo=espressif
-https://img.shields.io/badge/Healthcare-Monitoring-red?style=for-the-badge
-https://img.shields.io/badge/Arduino-Compatible-00979D?style=for-the-badge&logo=arduino
-https://img.shields.io/badge/Open%2520Source-Yes-brightgreen?style=for-the-badge
-https://img.shields.io/badge/Status-Prototype-yellow?style=for-the-badge)
+![KDU](https://img.shields.io/badge/KDU-Research%20Project-darkblue)
+![HYGEIA](https://img.shields.io/badge/HYGEIA-1.0-blueviolet?style=for-the-badge)
+![ESP32](https://img.shields.io/badge/ESP32-IoT-green?style=for-the-badge&logo=espressif)
+![Healthcare](https://img.shields.io/badge/Healthcare-Monitoring-red?style=for-the-badge)
+![Biomedical IoT](https://img.shields.io/badge/Field-Biomedical%20IoT-critical)
+![Open Source](https://img.shields.io/badge/Open%2520Source-Yes-brightgreen?style=for-the-badge)
+
 
 > **"Empowering elderly care with real-time monitoring and automated assistance."**
 
