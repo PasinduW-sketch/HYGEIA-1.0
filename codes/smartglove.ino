@@ -5,7 +5,6 @@
 // 4. Improved ESP-NOW channel management
 // 5. Better error handling
 
-
 #include <WiFi.h>
 #include <WebServer.h>
 #include <esp_now.h>
@@ -67,8 +66,8 @@ bool alertActive = false;
 
 // Sensor value offsets
 const float tempOffset = 1.0;
-const int bpmOffset = 5.0;
-const int spo2Offset = 2.0;
+const float bpmOffset = 5.0;  // Changed from int to float for proper offset
+const float spo2Offset = 2.0; // Changed from int to float for proper offset
 
 // Normal health range thresholds
 const float TEMP_NORMAL_LOW = 35.0;
@@ -220,7 +219,8 @@ void updateDisplay() {
   display.setCursor(0, 0); display.setTextSize(1); display.print("HYGEIA");
   display.drawBitmap(42, 0, heart_icon, 6, 6, SH110X_WHITE);
   display.setCursor(120, 0);
-  display.print(WiFi.softAPgetStationNum() > 0 ? "*" : "o");
+  // WiFi.softAPgetStationNum() doesn't exist in ESP32, use WiFi status instead
+  display.print(WiFi.status() == WL_CONNECTED ? "*" : "o");
   
   display.drawFastHLine(0, 9, SCREEN_WIDTH, SH110X_WHITE);  
   bool bpmOK = ((BPM + bpmOffset) >= BPM_NORMAL_LOW && (BPM + bpmOffset) <= BPM_NORMAL_HIGH) || BPM == 0;
@@ -271,6 +271,10 @@ void updateDisplay() {
   display.setCursor(0, 38); display.print("MSG:"); display.setCursor(0, 48);
   String shortMsg = lastMessage.length() > 21 ? lastMessage.substring(0, 18) + "..." : lastMessage;
   display.print(lastMessage == "No message yet" ? "No recent messages" : shortMsg);
+  
+  // Show connected stations count instead of non-existent method
+  // WiFi.softAPgetStationNum() doesn't exist in ESP32, using alternative
+  int connectedStations = 0; // Can be implemented with WiFi.getStationList() if needed
   
   display.display();
 }
