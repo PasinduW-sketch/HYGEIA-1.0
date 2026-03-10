@@ -5,7 +5,6 @@
 #include <time.h>
 #include <esp_now.h>
 
-
 #define STEP_PIN 19
 #define DIR_PIN 18
 const int ledPin = 21;
@@ -29,8 +28,8 @@ const long gmtOffset_sec = 19800; // GMT+5:30
 const int daylightOffset_sec = 0;
 
 // IMPORTANT: Replace this with the actual MAC address from the smart glove's serial monitor
-// TODO: Set the receiver MAC address
-uint8_t receiverMAC[] = {0x00, 0x00, 0x00, 0x00, 0x00, 0x00};
+// TODO: Set the receiver MAC address (check smartglove.ino serial output for AP MAC)
+uint8_t receiverMAC[] = {0x00, 0x00, 0x00, 0x00, 0x00, 0x00}; // UPDATE THIS!
 uint8_t senderMAC[6];
 
 bool scheduled[12] = {false};
@@ -58,7 +57,7 @@ unsigned long elapsedTime = 0;
 String lastReceivedMessage = ""; //  Store last received ESP-NOW message
 
 // Function Prototypes (Forward Declarations)
-void startStepperSequence(bool isManual, int scheduleIndex = -1);
+bool startStepperSequence(bool isManual, int scheduleIndex = -1);
 void handleStepperSequence();
 
 void setup() {
@@ -77,17 +76,36 @@ void setup() {
   // Connect to the smart glove's AP to ensure they are on the same channel
   WiFi.begin(GLOVE_AP_SSID);
   Serial.print("Connecting to Glove AP");
-  while (WiFi.status() != WL_CONNECTED) {
+  int attempts = 0;
+  while (WiFi.status() != WL_CONNECTED && attempts < 20) {
     delay(500);
     Serial.print(".");
+    attempts++;
   }
-  Serial.println("\nConnected to Glove AP!");
+  if (WiFi.status() == WL_CONNECTED) {
+    Serial.println("\nConnected to Glove AP!");
+  } else {
+    Serial.println("\nFailed to connect to Glove AP (Timeout). Continuing...");
+  }
 
   // Start this device's own AP for its web interface on the SAME channel
   WiFi.softAP(ssid, password, WiFi.channel());
   Serial.println("Web Interface AP Started on same channel as Glove.");
 
   configTime(gmtOffset_sec, daylightOffset_sec, ntpServer);
+  struct tm timeinfo;
+  int timeAttempts = 0;
+  Serial.print("Syncing time");
+  while (!getLocalTime(&timeinfo) && timeAttempts < 10) {
+    Serial.print(".");
+    delay(1000);
+    timeAttempts++;
+  }
+  if (timeAttempts < 10) {
+    Serial.println("\nTime synced!");
+  } else {
+    Serial.println("\nTime sync failed.");
+  }
 
   if (esp_now_init() != ESP_OK) {
     Serial.println("ESP-NOW init failed");
@@ -131,8 +149,9 @@ void loop() {
   checkAndRunSchedule();
 
   if (runLoopNow) {
-    runLoopNow = false;
-    startStepperSequence(true);
+    if (startStepperSequence(true)) {
+      runLoopNow = false;
+    }
   }
 
   if (stopwatchRunning) {
@@ -164,12 +183,13 @@ void checkAndRunSchedule() {
 
   for (int i = 0; i < 12; i++) {
     if (scheduled[i] && !triggered[i]) {
-      if (now >= triggerTimes[i]) {
-        startStepperSequence(false, i);
-        triggered[i] = true;
-      } else if (now > triggerTimes[i] + 60) {
+      if (now > triggerTimes[i] + 60) {
         expired[i] = true;
         scheduled[i] = false;
+      } else if (now >= triggerTimes[i]) {
+        if (startStepperSequence(false, i)) {
+          triggered[i] = true;
+        }
       }
     }
   }
@@ -616,8 +636,11 @@ void handleReset() {
   server.send(302, "text/plain", "");
 }
 
-void startStepperSequence(bool isManual, int scheduleIndex) {
-  if (stepperSequenceActive) return; // Prevent re-triggering if already running
+// Global stepper control variables (moved from inside function)
+static float stepFraction = 0.0;
+
+bool startStepperSequence(bool isManual, int scheduleIndex) {
+  if (stepperSequenceActive) return false; // Prevent re-triggering if already running
 
   stepperSequenceActive = true;
   stepperSequenceStart = millis();
@@ -626,7 +649,8 @@ void startStepperSequence(bool isManual, int scheduleIndex) {
     isRunning[scheduleIndex] = true;
   }
 
-  uint8_t msg[] = {1};
+  // Send ESP-NOW message (byte type for compatibility)
+  byte msg[] = {1};
   esp_err_t result = esp_now_send(receiverMAC, msg, sizeof(msg));
   if (result == ESP_OK) {
     Serial.println("Vibration signal sent via ESP-NOW.");
@@ -634,7 +658,17 @@ void startStepperSequence(bool isManual, int scheduleIndex) {
     Serial.println("Failed to send vibration signal.");
   }  
   
-  for (long i = 0; i < totalSteps; i++) {
+  // Calculate precise steps with microstepping compensation
+  float exactSteps = (stepsPerRevolution * (float)microsteps) / 12.0;
+  long actualSteps = (long)exactSteps;
+  stepFraction += (exactSteps - actualSteps);
+  if (stepFraction >= 1.0) {
+    int extra = (int)stepFraction;
+    actualSteps += extra;
+    stepFraction -= extra;
+  }
+
+  for (long i = 0; i < actualSteps; i++) {
     digitalWrite(STEP_PIN, HIGH);
     delayMicroseconds(delayPerStep);
     digitalWrite(STEP_PIN, LOW);
@@ -642,6 +676,7 @@ void startStepperSequence(bool isManual, int scheduleIndex) {
   }
   
   digitalWrite(ledPin, HIGH);
+  return true;
 }
 
 void handleStepperSequence() {
